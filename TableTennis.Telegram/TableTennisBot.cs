@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using TableTennis.DataAccess.Telegram;
 using TableTennis.RR;
-using TableTennis.RR.Models;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
@@ -17,15 +16,22 @@ namespace TableTennis.Telegram
         private readonly IChatsRepository _chatsRepository;
         private readonly TelegramBotConfiguration _configuration;
         private readonly RealTimeRetriever _realTimeRetriever;
+        private readonly ISharedGamesRepository _sharedGamesRepository;
 
-        public TableTennisBot(TelegramBotConfiguration configuration, RealTimeRetriever realTimeRetriever, IChatsRepository chatsRepository,
-            IAccessTokenRepository accessTokenRepository)
+        public TableTennisBot(
+            TelegramBotConfiguration configuration,
+            RealTimeRetriever realTimeRetriever,
+            IChatsRepository chatsRepository,
+            IAccessTokenRepository accessTokenRepository,
+            ISharedGamesRepository sharedGamesRepository)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _realTimeRetriever = realTimeRetriever ?? throw new ArgumentNullException(nameof(realTimeRetriever));
             _chatsRepository = chatsRepository ?? throw new ArgumentNullException(nameof(chatsRepository));
             _accessTokenRepository =
                 accessTokenRepository ?? throw new ArgumentNullException(nameof(accessTokenRepository));
+            _sharedGamesRepository =
+                sharedGamesRepository ?? throw new ArgumentNullException(nameof(sharedGamesRepository));
 
             _botClient = new TelegramBotClient(_configuration.AccessToken);
             _botClient.OnMessage += MessageHandler;
@@ -33,18 +39,22 @@ namespace TableTennis.Telegram
             _botClient.StartReceiving();
         }
 
-        private async void GoodBigScorePercentageHandler(int totalgamescount, int totalbigscorescount, string player1name, string player2name)
+        private async void GoodBigScorePercentageHandler(int totalGamesCount, int totalBigScoresCount,
+            string player1Name, string player2Name)
         {
+            var alreadyPublished = await _sharedGamesRepository.ExistsAsync(player1Name, player2Name);
+            if (alreadyPublished) return;
+
             var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
             var message = "🏓 *Table Tennis*\n";
-            message += $"{player1name} vs {player2name}\n";
-            message += $"Total: {totalgamescount}\n";
-            message += $"BigScores: {totalbigscorescount}\n\n";
+            message += $"{player1Name} vs {player2Name}\n";
+            message += $"Total: {totalGamesCount}\n";
+            message += $"BigScores: {totalBigScoresCount}\n\n";
             message += "`There is a big chance of rounds have odd score.`";
+
+            await _sharedGamesRepository.AddAsync(player1Name, player2Name);
             foreach (var chatId in allAuthedChats)
-            {
                 await _botClient.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
-            }
         }
 
         private async void MessageHandler(object sender, MessageEventArgs e)
@@ -86,7 +96,8 @@ namespace TableTennis.Telegram
 
             await _chatsRepository.AddChatAsync(message.Chat.Id);
             await _botClient.SendTextMessageAsync(message.Chat.Id, "*Authenticated*", ParseMode.Markdown);
-            await _botClient.SendTextMessageAsync(message.Chat.Id, "*I will keep you updated for good bets.*", ParseMode.Markdown);
+            await _botClient.SendTextMessageAsync(message.Chat.Id, "*I will keep you updated for good bets.*",
+                ParseMode.Markdown);
         }
 
         private async Task<string> GenerateAccessTokenAsync()

@@ -34,6 +34,8 @@ namespace TableTennis.Telegram
                 .AddSingleton<IAccessTokenRepository, AccessTokenRepository>(isp =>
                     new AccessTokenRepository(redisConnectionString))
                 .AddSingleton<IChatsRepository, ChatsRepository>(isp => new ChatsRepository(redisConnectionString))
+                .AddSingleton<ISharedGamesRepository, SharedGamesRepository>(isp =>
+                    new SharedGamesRepository(redisConnectionString))
                 .AddSingleton<TableTennisBot>()
                 .BuildServiceProvider();
 
