@@ -56,8 +56,8 @@ namespace TableTennis.DataAccess.Models
 
         public class Score
         {
-            public long Home { get; set; }
-            public long Away { get; set; }
+            public long? Home { get; set; }
+            public long? Away { get; set; }
         }
 
         public class TimerModel

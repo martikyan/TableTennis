@@ -73,15 +73,14 @@ namespace TableTennis.RR
                 var eventResults =
                     await _betsApiClient.GetSingleEventAsync(_configuration.BetsApiAccessToken, oldEventId);
                 var singleResult = eventResults.Results.FirstOrDefault();
-                if (singleResult?.Scores == null || singleResult.Scores.Count == 0)
-                {
-                    continue;
-                }
-                
+                if (singleResult?.Scores == null || singleResult.Scores.Count == 0) continue;
+
                 var homeName = singleResult.Home.Name;
                 var awayName = singleResult.Away.Name;
                 foreach (var score in singleResult.Scores)
                 {
+                    if (score.Value.Home == null || score.Value.Away == null) continue;
+
                     var score1 = new Score
                     {
                         ActualScore = (int) score.Value.Home,

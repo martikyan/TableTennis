@@ -68,7 +68,7 @@ namespace TableTennis.Telegram
         {
             if (message.Text == "/start")
                 await _botClient.SendTextMessageAsync(message.Chat.Id,
-                    $"Get an *access token* from *@{_configuration.AdminUsername}* to start using me.",
+                    $"Get an *access token* from *@{_configuration.AdminUsername}* to start. Then just send it to me as a simple message.",
                     ParseMode.Markdown);
         }
 
@@ -88,15 +88,19 @@ namespace TableTennis.Telegram
         {
             if (message.Text?.Length != 36) return;
 
-            var exist = await _chatsRepository.ExistsAsync(message.Chat.Id);
-            if (exist) return;
+            var chatExist = await _chatsRepository.ExistsAsync(message.Chat.Id);
+            if (chatExist) return;
 
-            var isAuthenticated = await _accessTokenRepository.ExistsAsync(message.Text);
-            if (!isAuthenticated) return;
+            var atExists = await _accessTokenRepository.ExistsAsync(message.Text);
+            if (!atExists) return;
 
+            var isUsed = await _accessTokenRepository.IsUsedAsync(message.Text);
+            if (isUsed) return;
+
+            await _accessTokenRepository.MakeUsedAsync(message.Text);
             await _chatsRepository.AddChatAsync(message.Chat.Id);
             await _botClient.SendTextMessageAsync(message.Chat.Id, "*Authenticated*", ParseMode.Markdown);
-            await _botClient.SendTextMessageAsync(message.Chat.Id, "*I will keep you updated for good bets.*",
+            await _botClient.SendTextMessageAsync(message.Chat.Id, "*I will keep you updated about good bets.*",
                 ParseMode.Markdown);
         }
 

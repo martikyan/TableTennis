@@ -14,17 +14,33 @@ namespace TableTennis.DataAccess.Telegram
 
         public Task<bool> ExistsAsync(string accessToken)
         {
-            return _connectionMultiplexer.GetDatabase(0).KeyExistsAsync(accessToken);
+            return _connectionMultiplexer.GetDatabase(0).KeyExistsAsync(accessToken.ToUpper());
         }
 
         public Task AddAsync(string accessToken)
         {
-            return _connectionMultiplexer.GetDatabase(0).StringSetAsync(accessToken, true);
+            return _connectionMultiplexer.GetDatabase(0).StringSetAsync(accessToken.ToUpper(), false);
+        }
+
+        public Task MakeUsedAsync(string accessToken)
+        {
+            return _connectionMultiplexer.GetDatabase(0).StringSetAsync(accessToken.ToUpper(), true);
+        }
+
+        public async Task<bool> IsUsedAsync(string accessToken)
+        {
+            if (await ExistsAsync(accessToken))
+            {
+                var result = await _connectionMultiplexer.GetDatabase(0).StringGetAsync(accessToken.ToUpper());
+                return (bool) result;
+            }
+
+            return false;
         }
 
         public Task RemoveAsync(string accessToken)
         {
-            return _connectionMultiplexer.GetDatabase(0).KeyDeleteAsync(accessToken);
+            return _connectionMultiplexer.GetDatabase(0).KeyDeleteAsync(accessToken.ToUpper());
         }
     }
 }

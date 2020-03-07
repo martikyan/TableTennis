@@ -8,6 +8,10 @@ namespace TableTennis.DataAccess.Telegram
 
         Task AddAsync(string accessToken);
 
+        Task MakeUsedAsync(string accessToken);
+
+        Task<bool> IsUsedAsync(string accessToken);
+
         Task RemoveAsync(string accessToken);
     }
 }
