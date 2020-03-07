@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace TableTennis.DataAccess
+namespace TableTennis.DataAccess.Telegram
 {
     public interface IAccessTokenRepository
     {

@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using StackExchange.Redis;
 
-namespace TableTennis.DataAccess
+namespace TableTennis.DataAccess.Telegram
 {
     public class AccessTokenRepository : IAccessTokenRepository
     {

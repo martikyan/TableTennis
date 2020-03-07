@@ -4,6 +4,6 @@ namespace TableTennis.DataAccess.Models
     {
         None = 0,
         Soccer = 1,
-        TableTennis = 92,
+        TableTennis = 92
     }
 }

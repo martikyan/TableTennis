@@ -35,7 +35,6 @@ namespace TableTennis.DataAccess.Models
 
                 public class SidePlayerModel
                 {
-
                     public int Id { get; set; }
 
                     public string Name { get; set; }

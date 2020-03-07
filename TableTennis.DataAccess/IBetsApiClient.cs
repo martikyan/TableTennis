@@ -1,5 +1,3 @@
-using System;
-using System.Security.Principal;
 using System.Threading.Tasks;
 using RestEase;
 using TableTennis.DataAccess.Models;
