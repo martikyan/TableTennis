@@ -19,6 +19,7 @@ namespace TableTennis.RR
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
+        public event UnbalancedOddsHandler OnUnbalancedOddsFound = delegate { };
         public event GoodBigScorePercentageHandler OnGoodBigScorePercentageFound = delegate { };
 
         public async void Start()
@@ -28,11 +29,41 @@ namespace TableTennis.RR
                 var inPlayGameIds = await GetInplayGameIds();
                 foreach (var id in inPlayGameIds)
                 {
-                    var results = await GetHistoryOfGamesAsync(id);
-                    AnalyzeScores(results);
+                    var oddsResult =
+                        await _betsApiClient.GetSingleEventOddsSummaryAsync(_configuration.BetsApiAccessToken, id);
+
+                    var odds = ExtractOdds(oddsResult);
+                    if (odds != null)
+                    {
+                        var singleResult =
+                            await _betsApiClient.GetSingleEventAsync(_configuration.BetsApiAccessToken, id);
+                        var oddsDiff = Math.Abs(odds.Item1 - odds.Item2);
+
+                        if (oddsDiff > _configuration.MinimalOddsDifference)
+                            OnUnbalancedOddsFound(odds.Item1, odds.Item2, singleResult.Results[0].Home.Name,
+                                singleResult.Results[0].Away.Name);
+                    }
+
+                    var historyResult = await GetHistoryOfGamesAsync(id);
+                    AnalyzeScores(historyResult);
                 }
 
                 await Task.Delay(_configuration.ScanThresholdSeconds * 1000);
+            }
+        }
+
+        private Tuple<double, double> ExtractOdds(SingleEventOddsSummary oddsResult)
+        {
+            try
+            {
+                var odd1 = double.Parse(oddsResult.Results.Bet365.Odds.Start.The92_1.HomeOd);
+                var odd2 = double.Parse(oddsResult.Results.Bet365.Odds.Start.The92_1.AwayOd);
+
+                return Tuple.Create(odd1, odd2);
+            }
+            catch
+            {
+                return null;
             }
         }
 

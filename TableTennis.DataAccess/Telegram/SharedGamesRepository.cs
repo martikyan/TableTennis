@@ -19,21 +19,20 @@ namespace TableTennis.DataAccess.Telegram
 
             // Move TTL seconds to configuration.
             return _connectionMultiplexer.GetDatabase(2)
-                .StringSetAsync(gameId.ToString(), true, TimeSpan.FromMinutes(35));
+                .StringSetAsync(gameId, true, TimeSpan.FromMinutes(35));
         }
 
         public async Task<bool> ExistsAsync(string player1Name, string player2Name)
         {
             var gameId = GetGameId(player1Name, player2Name);
-            var value = await _connectionMultiplexer.GetDatabase(2).StringGetAsync(gameId.ToString());
+            var exists = await _connectionMultiplexer.GetDatabase(2).KeyExistsAsync(gameId);
 
-            return value == default || (bool) value == false;
+            return exists;
         }
 
-        private int GetGameId(string player1Name, string player2Name)
+        private string GetGameId(string player1Name, string player2Name)
         {
-            var gameId = player1Name.GetHashCode() ^ player2Name.GetHashCode();
-            return gameId;
+            return player1Name + player2Name;
         }
     }
 }

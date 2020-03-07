@@ -36,7 +36,26 @@ namespace TableTennis.Telegram
             _botClient = new TelegramBotClient(_configuration.AccessToken);
             _botClient.OnMessage += MessageHandler;
             _realTimeRetriever.OnGoodBigScorePercentageFound += GoodBigScorePercentageHandler;
+            _realTimeRetriever.OnUnbalancedOddsFound += UnbalancedOddsHandler;
             _botClient.StartReceiving();
+        }
+
+        private async void UnbalancedOddsHandler(double odds1, double odds2, string player1Name, string player2Name)
+        {
+            var alreadyPublished = await _sharedGamesRepository.ExistsAsync(player1Name, player2Name + "B");
+            if (alreadyPublished) return;
+
+            var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
+            var message = "🏓 *Table Tennis*\n";
+            message += $"{player1Name} vs {player2Name}\n";
+            message += $"{odds1} x {odds2}\n";
+            message += "`There is a big difference of the odds,`\n";
+            message += "`so players' skills differ a lot.`\n";
+            message += "`There is a big chance of rounds have odd score.`";
+
+            await _sharedGamesRepository.AddAsync(player1Name, player2Name + "B");
+            foreach (var chatId in allAuthedChats)
+                await _botClient.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
         }
 
         private async void GoodBigScorePercentageHandler(int totalGamesCount, int totalBigScoresCount,

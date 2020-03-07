@@ -17,5 +17,10 @@ namespace TableTennis.DataAccess
         // https://api.betsapi.com/v1/event/view?token=YOUR_TOKEN&event_id=92149
         [Get("v1/event/view")]
         Task<SingleEventView> GetSingleEventAsync([Query] string token, [Query("event_id")] int eventId);
+
+        // https://api.betsapi.com/v2/event/odds/summary?token=YOUR_TOKEN&event_id=232751
+        [Get("v2/event/odds/summary")]
+        Task<SingleEventOddsSummary> GetSingleEventOddsSummaryAsync([Query] string token,
+            [Query("event_id")] int eventId);
     }
 }
