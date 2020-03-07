@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using TableTennis.DataAccess.Telegram;
+using TableTennis.RR;
+using TableTennis.RR.Models;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
@@ -14,18 +16,35 @@ namespace TableTennis.Telegram
         private readonly TelegramBotClient _botClient;
         private readonly IChatsRepository _chatsRepository;
         private readonly TelegramBotConfiguration _configuration;
+        private readonly RealTimeRetriever _realTimeRetriever;
 
-        public TableTennisBot(TelegramBotConfiguration configuration, IChatsRepository chatsRepository,
+        public TableTennisBot(TelegramBotConfiguration configuration, RealTimeRetriever realTimeRetriever, IChatsRepository chatsRepository,
             IAccessTokenRepository accessTokenRepository)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _realTimeRetriever = realTimeRetriever ?? throw new ArgumentNullException(nameof(realTimeRetriever));
             _chatsRepository = chatsRepository ?? throw new ArgumentNullException(nameof(chatsRepository));
             _accessTokenRepository =
                 accessTokenRepository ?? throw new ArgumentNullException(nameof(accessTokenRepository));
 
             _botClient = new TelegramBotClient(_configuration.AccessToken);
             _botClient.OnMessage += MessageHandler;
+            _realTimeRetriever.OnGoodBigScorePercentageFound += GoodBigScorePercentageHandler;
             _botClient.StartReceiving();
+        }
+
+        private async void GoodBigScorePercentageHandler(int totalgamescount, int totalbigscorescount, string player1name, string player2name)
+        {
+            var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
+            var message = "🏓 *Table Tennis*\n";
+            message += $"{player1name} vs {player2name}\n";
+            message += $"Total: {totalgamescount}\n";
+            message += $"BigScores: {totalbigscorescount}\n\n";
+            message += "`There is a big chance of rounds have odd score.`";
+            foreach (var chatId in allAuthedChats)
+            {
+                await _botClient.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
+            }
         }
 
         private async void MessageHandler(object sender, MessageEventArgs e)
@@ -67,6 +86,7 @@ namespace TableTennis.Telegram
 
             await _chatsRepository.AddChatAsync(message.Chat.Id);
             await _botClient.SendTextMessageAsync(message.Chat.Id, "*Authenticated*", ParseMode.Markdown);
+            await _botClient.SendTextMessageAsync(message.Chat.Id, "*I will keep you updated for good bets.*", ParseMode.Markdown);
         }
 
         private async Task<string> GenerateAccessTokenAsync()

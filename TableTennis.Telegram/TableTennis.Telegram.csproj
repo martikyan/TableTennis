@@ -16,6 +16,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\TableTennis.DataAccess\TableTennis.DataAccess.csproj" />
+      <ProjectReference Include="..\TableTennis.RR\TableTennis.RR.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -2,7 +2,10 @@ using System.IO;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RestEase;
+using TableTennis.DataAccess;
 using TableTennis.DataAccess.Telegram;
+using TableTennis.RR;
 
 namespace TableTennis.Telegram
 {
@@ -18,11 +21,16 @@ namespace TableTennis.Telegram
 
             var redisConnectionString = configuration.GetConnectionString("Redis");
             var tbc = new TelegramBotConfiguration();
+            var rtrc = new RealTimeRetrieverConfiguration();
             configuration.Bind(nameof(TelegramBotConfiguration), tbc);
+            configuration.Bind(nameof(RealTimeRetrieverConfiguration), rtrc);
 
 
             var serviceProvider = new ServiceCollection()
                 .AddSingleton(tbc)
+                .AddSingleton(rtrc)
+                .AddSingleton<RealTimeRetriever>()
+                .AddSingleton(isp => RestClient.For<IBetsApiClient>(rtrc.BetsApiUrl))
                 .AddSingleton<IAccessTokenRepository, AccessTokenRepository>(isp =>
                     new AccessTokenRepository(redisConnectionString))
                 .AddSingleton<IChatsRepository, ChatsRepository>(isp => new ChatsRepository(redisConnectionString))
@@ -30,6 +38,7 @@ namespace TableTennis.Telegram
                 .BuildServiceProvider();
 
 
+            serviceProvider.GetService<RealTimeRetriever>().Start();
             serviceProvider.GetService<TableTennisBot>();
 
             new ManualResetEvent(false).WaitOne();
