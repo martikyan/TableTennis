@@ -2,7 +2,6 @@ using System.IO;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RestEase;
 using TableTennis.DataAccess;
 using TableTennis.DataAccess.Telegram;
 using TableTennis.RR;
@@ -30,7 +29,7 @@ namespace TableTennis.Telegram
                 .AddSingleton(tbc)
                 .AddSingleton(rtrc)
                 .AddSingleton<RealTimeRetriever>()
-                .AddSingleton(isp => RestClient.For<IBetsApiClient>(rtrc.BetsApiUrl))
+                .AddSingleton<IBetsApiClient, BetsApiClient>(isp => new BetsApiClient(rtrc.BetsApiUrl))
                 .AddSingleton<IAccessTokenRepository, AccessTokenRepository>(isp =>
                     new AccessTokenRepository(redisConnectionString))
                 .AddSingleton<IChatsRepository, ChatsRepository>(isp => new ChatsRepository(redisConnectionString))
