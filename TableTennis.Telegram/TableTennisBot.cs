@@ -53,8 +53,7 @@ namespace TableTennis.Telegram
             var message = "🏓 *Table Tennis*\n";
             message += $"{player1Name} vs {player2Name}\n";
             message += $"{odds1} x {odds2}\n";
-            message += "There is a big difference of the odds, ";
-            message += "so players' skills differ a lot.\n";
+            message += "There is a big difference of the odds, so players' skills differ a lot.\n";
             message += "`There is a big chance of rounds have odd score.`";
 
 
