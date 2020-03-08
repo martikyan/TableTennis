@@ -49,8 +49,8 @@ namespace TableTennis.Telegram
             var message = "🏓 *Table Tennis*\n";
             message += $"{player1Name} vs {player2Name}\n";
             message += $"{odds1} x {odds2}\n";
-            message += "`There is a big difference of the odds,`\n";
-            message += "`so players' skills differ a lot.`\n";
+            message += "There is a big difference of the odds,";
+            message += "so players' skills differ a lot.\n";
             message += "`There is a big chance of rounds have odd score.`";
 
             await _sharedGamesRepository.AddAsync(player1Name, player2Name + "B");
@@ -67,8 +67,8 @@ namespace TableTennis.Telegram
             var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
             var message = "🏓 *Table Tennis*\n";
             message += $"{player1Name} vs {player2Name}\n";
-            message += $"Total: {totalGamesCount}\n";
-            message += $"BigScores: {totalBigScoresCount}\n\n";
+            message += $"Total games analyzed: {totalGamesCount}\n";
+            message += $"BigScores percentage: {Math.Round(totalBigScoresCount * 100.0 / totalGamesCount, 2)}%\n";
             message += "`There is a big chance of rounds have odd score.`";
 
             await _sharedGamesRepository.AddAsync(player1Name, player2Name);
@@ -78,9 +78,26 @@ namespace TableTennis.Telegram
 
         private async void MessageHandler(object sender, MessageEventArgs e)
         {
+            await HandleBroadcastMessageRequest(e.Message);
             await HandleTokenGenerationMessageRequest(e.Message);
             await HandleAuthenticationMessageRequest(e.Message);
             await HandleStartMessageRequest(e.Message);
+        }
+
+        private async Task HandleBroadcastMessageRequest(Message message)
+        {
+            if (!string.Equals(message.Chat.Username, _configuration.AdminUsername)) return;
+            if (string.IsNullOrEmpty(message.Text)) return;
+            if (!message.Text.StartsWith("/broadcast ")) return;
+
+            var textMessage = message.Text.Remove(0, 11);
+            if (string.IsNullOrEmpty(textMessage)) return;
+            
+            var finalText = $"Broadcast message by @{_configuration.AdminUsername}\n{textMessage}";
+            foreach (var chatId in await _chatsRepository.GetAllChatsAsync())
+            {
+                await _botClient.SendTextMessageAsync(chatId, finalText, ParseMode.Markdown);
+            }
         }
 
         private async Task HandleStartMessageRequest(Message message)
@@ -93,6 +110,7 @@ namespace TableTennis.Telegram
 
         private async Task HandleTokenGenerationMessageRequest(Message message)
         {
+            if (string.IsNullOrEmpty(message.Text)) return;
             if (!message.Text.StartsWith("/generate")) return;
 
             if (!string.Equals(message.Chat.Username, _configuration.AdminUsername)) return;
@@ -108,13 +126,25 @@ namespace TableTennis.Telegram
             if (message.Text?.Length != 36) return;
 
             var chatExist = await _chatsRepository.ExistsAsync(message.Chat.Id);
-            if (chatExist) return;
+            if (chatExist)
+            {
+                await _botClient.SendTextMessageAsync(message.Chat.Id, "You are already subscribed to the updates.");
+                return;
+            }
 
             var atExists = await _accessTokenRepository.ExistsAsync(message.Text);
-            if (!atExists) return;
+            if (!atExists)
+            {
+                await _botClient.SendTextMessageAsync(message.Chat.Id, "This token is invalid.");
+                return;
+            }
 
             var isUsed = await _accessTokenRepository.IsUsedAsync(message.Text);
-            if (isUsed) return;
+            if (isUsed)
+            {
+                await _botClient.SendTextMessageAsync(message.Chat.Id, "This token is already used.");
+                return;
+            }
 
             await _accessTokenRepository.MakeUsedAsync(message.Text);
             await _chatsRepository.AddChatAsync(message.Chat.Id);
