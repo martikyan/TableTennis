@@ -30,7 +30,7 @@ namespace TableTennis.DataAccess.Telegram
             return exists;
         }
 
-        private string GetGameId(string player1Name, string player2Name)
+        private static string GetGameId(string player1Name, string player2Name)
         {
             var args = new[] {player1Name, player2Name};
             Array.Sort(args);

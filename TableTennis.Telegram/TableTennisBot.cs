@@ -45,6 +45,10 @@ namespace TableTennis.Telegram
             var alreadyPublished = await _sharedGamesRepository.ExistsAsync(player1Name, player2Name + "B");
             if (alreadyPublished) return;
 
+            // Todo "+ B" is not a good way to make this unique,
+            // also, do we need it?
+            await _sharedGamesRepository.AddAsync(player1Name, player2Name + "B");
+
             var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
             var message = "🏓 *Table Tennis*\n";
             message += $"{player1Name} vs {player2Name}\n";
@@ -53,7 +57,7 @@ namespace TableTennis.Telegram
             message += "so players' skills differ a lot.\n";
             message += "`There is a big chance of rounds have odd score.`";
 
-            await _sharedGamesRepository.AddAsync(player1Name, player2Name + "B");
+
             foreach (var chatId in allAuthedChats)
                 await _botClient.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
         }
@@ -63,6 +67,7 @@ namespace TableTennis.Telegram
         {
             var alreadyPublished = await _sharedGamesRepository.ExistsAsync(player1Name, player2Name);
             if (alreadyPublished) return;
+            await _sharedGamesRepository.AddAsync(player1Name, player2Name);
 
             var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
             var message = "🏓 *Table Tennis*\n";
@@ -71,7 +76,6 @@ namespace TableTennis.Telegram
             message += $"BigScores percentage: {Math.Round(totalBigScoresCount * 100.0 / totalGamesCount, 2)}%\n";
             message += "`There is a big chance of rounds have odd score.`";
 
-            await _sharedGamesRepository.AddAsync(player1Name, player2Name);
             foreach (var chatId in allAuthedChats)
                 await _botClient.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
         }
@@ -92,12 +96,10 @@ namespace TableTennis.Telegram
 
             var textMessage = message.Text.Remove(0, 11);
             if (string.IsNullOrEmpty(textMessage)) return;
-            
+
             var finalText = $"Broadcast message by @{_configuration.AdminUsername}\n{textMessage}";
             foreach (var chatId in await _chatsRepository.GetAllChatsAsync())
-            {
                 await _botClient.SendTextMessageAsync(chatId, finalText, ParseMode.Markdown);
-            }
         }
 
         private async Task HandleStartMessageRequest(Message message)

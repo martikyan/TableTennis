@@ -52,7 +52,7 @@ namespace TableTennis.RR
             }
         }
 
-        private Tuple<double, double> ExtractOdds(SingleEventOddsSummary oddsResult)
+        private static Tuple<double, double> ExtractOdds(SingleEventOddsSummary oddsResult)
         {
             try
             {

@@ -29,13 +29,9 @@ namespace TableTennis.DataAccess.Telegram
 
         public async Task<bool> IsUsedAsync(string accessToken)
         {
-            if (await ExistsAsync(accessToken))
-            {
-                var result = await _connectionMultiplexer.GetDatabase(0).StringGetAsync(accessToken.ToUpper());
-                return (bool) result;
-            }
-
-            return false;
+            if (!await ExistsAsync(accessToken)) return false;
+            var result = await _connectionMultiplexer.GetDatabase(0).StringGetAsync(accessToken.ToUpper());
+            return (bool) result;
         }
 
         public Task RemoveAsync(string accessToken)
