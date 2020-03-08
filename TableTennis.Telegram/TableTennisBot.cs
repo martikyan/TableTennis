@@ -85,6 +85,8 @@ namespace TableTennis.Telegram
             await HandleTokenGenerationMessageRequest(e.Message);
             await HandleAuthenticationMessageRequest(e.Message);
             await HandleStartMessageRequest(e.Message);
+
+            GC.KeepAlive(_realTimeRetriever);
         }
 
         private async Task HandleBroadcastMessageRequest(Message message)
@@ -104,9 +106,16 @@ namespace TableTennis.Telegram
         private async Task HandleStartMessageRequest(Message message)
         {
             if (message.Text == "/start")
-                await _botClient.SendTextMessageAsync(message.Chat.Id,
-                    $"Get an *access token* from *@{_configuration.AdminUsername}* to start. Then just send it to me as a simple message.",
-                    ParseMode.Markdown);
+            {
+                var chatExist = await _chatsRepository.ExistsAsync(message.Chat.Id);
+                if (chatExist)
+                    await _botClient.SendTextMessageAsync(message.Chat.Id,
+                        "You are already authenticated to receive updates. Just wait.");
+                else
+                    await _botClient.SendTextMessageAsync(message.Chat.Id,
+                        $"Get an *access token* from *@{_configuration.AdminUsername}* to start. Then just send it to me as a simple message.",
+                        ParseMode.Markdown);
+            }
         }
 
         private async Task HandleTokenGenerationMessageRequest(Message message)
