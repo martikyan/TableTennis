@@ -15,23 +15,23 @@ namespace TableTennis.Telegram
         private readonly TelegramBotClient _botClient;
         private readonly IChatsRepository _chatsRepository;
         private readonly TelegramBotConfiguration _configuration;
+        private readonly IEventsRepository _eventsRepository;
         private readonly RealTimeRetriever _realTimeRetriever;
-        private readonly ISharedGamesRepository _sharedGamesRepository;
 
         public TableTennisBot(
             TelegramBotConfiguration configuration,
             RealTimeRetriever realTimeRetriever,
             IChatsRepository chatsRepository,
             IAccessTokenRepository accessTokenRepository,
-            ISharedGamesRepository sharedGamesRepository)
+            IEventsRepository eventsRepository)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _realTimeRetriever = realTimeRetriever ?? throw new ArgumentNullException(nameof(realTimeRetriever));
             _chatsRepository = chatsRepository ?? throw new ArgumentNullException(nameof(chatsRepository));
             _accessTokenRepository =
                 accessTokenRepository ?? throw new ArgumentNullException(nameof(accessTokenRepository));
-            _sharedGamesRepository =
-                sharedGamesRepository ?? throw new ArgumentNullException(nameof(sharedGamesRepository));
+            _eventsRepository =
+                eventsRepository ?? throw new ArgumentNullException(nameof(eventsRepository));
 
             _botClient = new TelegramBotClient(_configuration.AccessToken);
             _botClient.OnMessage += MessageHandler;
@@ -42,12 +42,9 @@ namespace TableTennis.Telegram
 
         private async void UnbalancedOddsHandler(double odds1, double odds2, string player1Name, string player2Name)
         {
-            var alreadyPublished = await _sharedGamesRepository.ExistsAsync(player1Name, player2Name + "B");
+            var alreadyPublished = await _eventsRepository.ExistsAsync(player1Name, player2Name);
             if (alreadyPublished) return;
-
-            // Todo "+ B" is not a good way to make this unique,
-            // also, do we need it?
-            await _sharedGamesRepository.AddAsync(player1Name, player2Name + "B");
+            await _eventsRepository.AddAsync(player1Name, player2Name);
 
             var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
             var message = "🏓 *Table Tennis*\n";
@@ -64,9 +61,9 @@ namespace TableTennis.Telegram
         private async void GoodBigScorePercentageHandler(int totalGamesCount, int totalBigScoresCount,
             string player1Name, string player2Name)
         {
-            var alreadyPublished = await _sharedGamesRepository.ExistsAsync(player1Name, player2Name);
+            var alreadyPublished = await _eventsRepository.ExistsAsync(player1Name, player2Name);
             if (alreadyPublished) return;
-            await _sharedGamesRepository.AddAsync(player1Name, player2Name);
+            await _eventsRepository.AddAsync(player1Name, player2Name);
 
             var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
             var message = "🏓 *Table Tennis*\n";

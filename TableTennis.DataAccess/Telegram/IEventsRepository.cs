@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 namespace TableTennis.DataAccess.Telegram
 {
-    public interface ISharedGamesRepository
+    public interface IEventsRepository
     {
         Task AddAsync(string player1Name, string player2Name);
 

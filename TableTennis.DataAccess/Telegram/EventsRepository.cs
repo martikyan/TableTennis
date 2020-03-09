@@ -4,11 +4,11 @@ using StackExchange.Redis;
 
 namespace TableTennis.DataAccess.Telegram
 {
-    public class SharedGamesRepository : ISharedGamesRepository
+    public class EventsRepository : IEventsRepository
     {
         private readonly ConnectionMultiplexer _connectionMultiplexer;
 
-        public SharedGamesRepository(string connectionString)
+        public EventsRepository(string connectionString)
         {
             _connectionMultiplexer = ConnectionMultiplexer.Connect(connectionString);
         }

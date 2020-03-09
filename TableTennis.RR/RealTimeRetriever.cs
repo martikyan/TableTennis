@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TableTennis.DataAccess;
 using TableTennis.DataAccess.Models;
+using TableTennis.DataAccess.Telegram;
 using TableTennis.RR.Models;
 
 namespace TableTennis.RR
@@ -12,10 +13,13 @@ namespace TableTennis.RR
     {
         private readonly IBetsApiClient _betsApiClient;
         private readonly RealTimeRetrieverConfiguration _configuration;
+        private readonly IEventsRepository _eventsRepository;
 
-        public RealTimeRetriever(IBetsApiClient betsApiClient, RealTimeRetrieverConfiguration configuration)
+        public RealTimeRetriever(IBetsApiClient betsApiClient, IEventsRepository eventsRepository,
+            RealTimeRetrieverConfiguration configuration)
         {
             _betsApiClient = betsApiClient ?? throw new ArgumentNullException(nameof(betsApiClient));
+            _eventsRepository = eventsRepository ?? throw new ArgumentNullException(nameof(eventsRepository));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
@@ -133,9 +137,19 @@ namespace TableTennis.RR
 
         private async Task<List<int>> GetInplayGameIds()
         {
+            var result = new List<int>();
             var response =
                 await _betsApiClient.GetInplayEventsAsync((int) SportId.TableTennis, _configuration.BetsApiAccessToken);
-            return response.Results.Select(r => r.Id).ToList();
+            foreach (var e in response.Results)
+            {
+                var wasAnalyzed = await _eventsRepository.ExistsAsync(e.Home.Name, e.Away.Name);
+                if (wasAnalyzed == false)
+                    result.Add(e.Id);
+                else
+                    await _eventsRepository.AddAsync(e.Home.Name, e.Away.Name);
+            }
+
+            return result;
         }
     }
 }
