@@ -75,18 +75,7 @@ namespace TableTennis.RR
         {
             if (scores.Count < _configuration.MinimalHistoryCount) return;
 
-            var sums = new List<int>();
-            var oddsCount = 0;
-            var evensCount = 0;
-            foreach (var sum in scores.Select(score => score.Item1.ActualScore + score.Item2.ActualScore))
-            {
-                sums.Add(sum);
-                if (sum % 2 == 0)
-                    evensCount++;
-                else
-                    oddsCount++;
-            }
-
+            var sums = scores.Select(score => score.Item1.ActualScore + score.Item2.ActualScore).ToList();
             var totalScoresCount = sums.Count;
             var bigScoresCount = sums.Count(s => s >= 22);
             var bigScoresPercentage = bigScoresCount * 100.0 / totalScoresCount;
