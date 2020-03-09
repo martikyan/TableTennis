@@ -15,24 +15,19 @@ namespace TableTennis.Telegram
         private readonly TelegramBotClient _botClient;
         private readonly IChatsRepository _chatsRepository;
         private readonly TelegramBotConfiguration _configuration;
-        private readonly IEventsRepository _eventsRepository;
         private readonly RealTimeRetriever _realTimeRetriever;
 
         public TableTennisBot(
             TelegramBotConfiguration configuration,
             RealTimeRetriever realTimeRetriever,
             IChatsRepository chatsRepository,
-            IAccessTokenRepository accessTokenRepository,
-            IEventsRepository eventsRepository)
+            IAccessTokenRepository accessTokenRepository)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _realTimeRetriever = realTimeRetriever ?? throw new ArgumentNullException(nameof(realTimeRetriever));
             _chatsRepository = chatsRepository ?? throw new ArgumentNullException(nameof(chatsRepository));
             _accessTokenRepository =
                 accessTokenRepository ?? throw new ArgumentNullException(nameof(accessTokenRepository));
-            _eventsRepository =
-                eventsRepository ?? throw new ArgumentNullException(nameof(eventsRepository));
-
             _botClient = new TelegramBotClient(_configuration.AccessToken);
             _botClient.OnMessage += MessageHandler;
             _realTimeRetriever.OnGoodBigScorePercentageFound += GoodBigScorePercentageHandler;
@@ -42,10 +37,6 @@ namespace TableTennis.Telegram
 
         private async void UnbalancedOddsHandler(double odds1, double odds2, string player1Name, string player2Name)
         {
-            var alreadyPublished = await _eventsRepository.ExistsAsync(player1Name, player2Name);
-            if (alreadyPublished) return;
-            await _eventsRepository.AddAsync(player1Name, player2Name);
-
             var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
             var message = "🏓 *Table Tennis*\n";
             message += $"{player1Name} vs {player2Name}\n";
@@ -61,10 +52,6 @@ namespace TableTennis.Telegram
         private async void GoodBigScorePercentageHandler(int totalGamesCount, int totalBigScoresCount,
             string player1Name, string player2Name)
         {
-            var alreadyPublished = await _eventsRepository.ExistsAsync(player1Name, player2Name);
-            if (alreadyPublished) return;
-            await _eventsRepository.AddAsync(player1Name, player2Name);
-
             var allAuthedChats = await _chatsRepository.GetAllChatsAsync();
             var message = "🏓 *Table Tennis*\n";
             message += $"{player1Name} vs {player2Name}\n";

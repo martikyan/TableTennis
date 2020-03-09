@@ -142,11 +142,11 @@ namespace TableTennis.RR
                 await _betsApiClient.GetInplayEventsAsync((int) SportId.TableTennis, _configuration.BetsApiAccessToken);
             foreach (var e in response.Results)
             {
-                var wasAnalyzed = await _eventsRepository.ExistsAsync(e.Home.Name, e.Away.Name);
-                if (wasAnalyzed == false)
-                    result.Add(e.Id);
-                else
-                    await _eventsRepository.AddAsync(e.Home.Name, e.Away.Name);
+                var wasRetrieved = await _eventsRepository.ExistsAsync(e.Id);
+                if (wasRetrieved) continue;
+
+                result.Add(e.Id);
+                await _eventsRepository.AddAsync(e.Id);
             }
 
             return result;
