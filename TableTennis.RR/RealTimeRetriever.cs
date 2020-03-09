@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TableTennis.DataAccess;
 using TableTennis.DataAccess.Models;
 using TableTennis.DataAccess.Telegram;
+using TableTennis.RR.Helpers;
 using TableTennis.RR.Models;
 
 namespace TableTennis.RR
@@ -86,42 +88,29 @@ namespace TableTennis.RR
 
         private async Task<List<Tuple<Score, Score>>> GetHistoryOfGamesAsync(int eventId)
         {
-            var result = new List<Tuple<Score, Score>>();
-            var history = await _betsApiClient.GetEventsHistoryAsync(_configuration.BetsApiAccessToken, eventId);
-            var oldEventIds = history.Results.Away.Select(e => e.Id).ToList();
-            oldEventIds.AddRange(history.Results.Home.Select(e => e.Id));
-            oldEventIds = oldEventIds.Distinct().ToList();
-
-            foreach (var oldEventId in oldEventIds)
+            var result = new ConcurrentBag<Tuple<Score, Score>>();
+            var singleEvent = await _betsApiClient.GetSingleEventAsync(_configuration.BetsApiAccessToken, eventId);
+            var name1 = singleEvent.Results[0].Home.Name;
+            var name2 = singleEvent.Results[0].Away.Name;
+            foreach (var date in DateTimeHelper.GetPast90DaysYYYYMMDD().AsParallel())
             {
-                var eventResults =
-                    await _betsApiClient.GetSingleEventAsync(_configuration.BetsApiAccessToken, oldEventId);
-                var singleResult = eventResults.Results.FirstOrDefault();
-                if (singleResult?.Scores == null || singleResult.Scores.Count == 0) continue;
+                var daySearch1Task = _betsApiClient.SearchEventsForTeamsAsync(_configuration.BetsApiAccessToken,
+                    (int) SportId.TableTennis, name1, name2, date);
 
-                var homeName = singleResult.Home.Name;
-                var awayName = singleResult.Away.Name;
-                foreach (var score in singleResult.Scores)
-                {
-                    if (score.Value.Home == null || score.Value.Away == null) continue;
+                var daySearch2Task = _betsApiClient.SearchEventsForTeamsAsync(_configuration.BetsApiAccessToken,
+                    (int) SportId.TableTennis, name2, name1, date);
 
-                    var score1 = new Score
-                    {
-                        ActualScore = (int) score.Value.Home,
-                        PlayerName = homeName
-                    };
 
-                    var score2 = new Score
-                    {
-                        ActualScore = (int) score.Value.Away,
-                        PlayerName = awayName
-                    };
-
-                    result.Add(new Tuple<Score, Score>(score1, score2));
-                }
+                var scores = ExtractFinalScores(await daySearch1Task);
+                scores.AddRange(ExtractFinalScores(await daySearch2Task));
+                foreach (var tuple in from score in scores
+                    let score1 = new Score {ActualScore = score.Item1, PlayerName = name1}
+                    let score2 = new Score {ActualScore = score.Item2, PlayerName = name2}
+                    select Tuple.Create(score1, score2))
+                    result.Add(tuple);
             }
 
-            return result;
+            return result.ToList();
         }
 
         private async Task<List<int>> GetInplayGameIds()
@@ -136,6 +125,25 @@ namespace TableTennis.RR
 
                 result.Add(e.Id);
                 await _eventsRepository.AddAsync(e.Id);
+            }
+
+            return result;
+        }
+
+        private static List<Tuple<int, int>> ExtractFinalScores(EventSearchResponse response)
+        {
+            var result = new List<Tuple<int, int>>();
+            try
+            {
+                foreach (var singleRes in response.Results)
+                {
+                    var scores = singleRes.Scores.Values;
+                    foreach (var score in scores) result.Add(Tuple.Create(score.Home, score.Away));
+                }
+            }
+            catch
+            {
+                // ignored
             }
 
             return result;

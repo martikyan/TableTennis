@@ -22,5 +22,10 @@ namespace TableTennis.DataAccess
         [Get("v2/event/odds/summary")]
         Task<SingleEventOddsSummary> GetSingleEventOddsSummaryAsync([Query] string token,
             [Query("event_id")] int eventId);
+
+        // https://api.betsapi.com/v1/events/search?token=YOUR_TOKEN&sport_id=1&home=Man%20City&away=Barcelona&time=1478029500
+        [Get("v1/events/search")]
+        Task<EventSearchResponse> SearchEventsForTeamsAsync([Query] string token, [Query("sport_id")] int sportId,
+            [Query] string home, [Query] string away, [Query] int time);
     }
 }
