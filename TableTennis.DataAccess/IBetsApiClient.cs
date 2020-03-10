@@ -27,5 +27,9 @@ namespace TableTennis.DataAccess
         [Get("v1/events/search")]
         Task<EventSearchResponse> SearchEventsForTeamsAsync([Query] string token, [Query("sport_id")] int sportId,
             [Query] string home, [Query] string away, [Query] int time);
+        
+        // https://api.betsapi.com/v2/events/ended?sport_id=1&token=YOUR-TOKEN
+        [Get("v2/events/ended")]
+        Task<EndedEventsPage> GetEndedEventsPageAsync([Query("sport_id")] int sportId, string token, int page);
     }
 }

@@ -63,5 +63,13 @@ namespace TableTennis.DataAccess
                     _betsApiClient.SearchEventsForTeamsAsync(token, sportId, home, away, time));
             return result.Result;
         }
+
+        public async Task<EndedEventsPage> GetEndedEventsPageAsync(int sportId, string token, int page)
+        {
+            var result =
+                await _retryPolicy.ExecuteAndCaptureAsync(() =>
+                    _betsApiClient.GetEndedEventsPageAsync(sportId, token, page));
+            return result.Result;
+        }
     }
 }
