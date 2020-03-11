@@ -106,6 +106,8 @@ namespace TableTennis.RR
                     .AsNoTracking().Where(g =>
                         g.Player1.Name == name1 && g.Player2.Name == name2 ||
                         g.Player1.Name == name2 && g.Player2.Name == name1)
+                    .OrderByDescending(g => g.Id)
+                    .Take(_configuration.MaxGamesToRetrieve)
                     .ToListAsync();
 
                 foreach (var gameScore in games.SelectMany(g => g.Scores))

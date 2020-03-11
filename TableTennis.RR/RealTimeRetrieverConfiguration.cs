@@ -8,5 +8,6 @@ namespace TableTennis.RR
         public double MinimalOddsDifference { get; set; }
         public int MaximalBigScoresPercentage { get; set; }
         public int ScanThresholdSeconds { get; set; }
+        public int MaxGamesToRetrieve { get; set; }
     }
 }
