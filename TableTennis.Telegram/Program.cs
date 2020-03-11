@@ -46,8 +46,8 @@ namespace TableTennis.Telegram
                 .BuildServiceProvider();
 
 
-            serviceProvider.GetService<RealTimeRetriever>().Start();
             serviceProvider.GetService<TableTennisBot>();
+            serviceProvider.GetService<RealTimeRetriever>().StartAsync().Wait();
 
             new ManualResetEvent(false).WaitOne();
         }

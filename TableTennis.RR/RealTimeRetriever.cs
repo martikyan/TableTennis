@@ -31,13 +31,16 @@ namespace TableTennis.RR
         public event UnbalancedOddsHandler OnUnbalancedOddsFound = delegate { };
         public event GoodBigScorePercentageHandler OnGoodBigScorePercentageFound = delegate { };
 
-        public async void Start()
+        public async Task StartAsync()
         {
             while (true)
             {
                 var inPlayGameIds = await GetInplayGameIds();
                 foreach (var id in inPlayGameIds)
                 {
+                    var historyResult = await GetHistoryOfGamesAsync(id);
+                    AnalyzeScores(historyResult);
+                    
                     var oddsResult =
                         await _betsApiClient.GetSingleEventOddsSummaryAsync(_configuration.BetsApiAccessToken, id);
 
@@ -52,9 +55,6 @@ namespace TableTennis.RR
                             OnUnbalancedOddsFound(odds.Item1, odds.Item2, singleResult.Results[0].Home.Name,
                                 singleResult.Results[0].Away.Name);
                     }
-
-                    var historyResult = await GetHistoryOfGamesAsync(id);
-                    AnalyzeScores(historyResult);
                 }
 
                 await Task.Delay(_configuration.ScanThresholdSeconds * 1000);
