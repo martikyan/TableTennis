@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TableTennis.DataAccess;
@@ -33,28 +34,37 @@ namespace TableTennis.DataExtractor
             {
                 Console.WriteLine($"Current date {date}");
                 EndedEventsPage firstPage;
+                var attempt = 0;
                 do
                 {
                     firstPage = await _betsApiClient.GetEndedEventsDayAsync((int) SportId.TableTennis,
                         _configuration.BetsApiAccessToken,
                         date, 0);
 
-                    await Task.Delay(TimeSpan.FromSeconds(10));
-                } while (firstPage?.Results == null);
+                    if (firstPage?.Results == null)
+                    {
+                        attempt++;
+                        await Task.Delay(TimeSpan.FromSeconds(10));
+                    }
+                } while (firstPage?.Results == null && attempt < 10);
 
+                if (attempt >= 10)
+                {
+                    break;
+                }
+                
                 await RegisterPageResults(firstPage);
 
-                var totalPages = 0;
-                if (firstPage.Pager.PerPage == 0)
-                    totalPages = 2;
-                else
+                var totalPages = 6;
+                if (firstPage.Pager.PerPage != 0)
                     totalPages = 1 + firstPage.Pager.Total / firstPage.Pager.PerPage;
 
                 Console.WriteLine($"Total pages in this date {totalPages}");
-                for (var i = 0; i < totalPages; i++)
+                for (var i = 2; i <= totalPages + 4; i++)
                 {
-                    Console.WriteLine($"Getting page N{i}");
+                    Console.WriteLine($"Scanning page N{i}");
                     await ScanSinglePage(i, date);
+                    Console.WriteLine($"Done scanning page N{i}");
                 }
             }
         }
@@ -99,7 +109,7 @@ namespace TableTennis.DataExtractor
             }
         }
 
-        private async Task<Game> ExtractGameFromResult(dynamic result)
+        private async Task<Game> ExtractGameFromResult(EndedEventsPage.Result result)
         {
             var game = new Game
             {
@@ -121,13 +131,12 @@ namespace TableTennis.DataExtractor
 
             if (result.Scores?.Values == null) return null;
 
-            foreach (var score in result.Scores.Values)
+            foreach (var extractedScore in result.Scores.Values.Select(score => new Score
             {
-                var extractedScore = new Score
-                {
-                    Score1 = score.Home,
-                    Score2 = score.Away
-                };
+                Score1 = score.Home,
+                Score2 = score.Away
+            }))
+            {
                 game.Scores.Add(new GamesScoresMap
                 {
                     Score = extractedScore,
