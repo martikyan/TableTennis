@@ -1,27 +1,36 @@
 using System;
 using System.Threading.Tasks;
-using StackExchange.Redis;
+using Microsoft.EntityFrameworkCore;
+using TableTennis.DataAccess.DBAccess;
+using TableTennis.DataAccess.DBAccess.Models;
 
 namespace TableTennis.DataAccess.Telegram
 {
     public class EventsRepository : IEventsRepository
     {
-        private readonly ConnectionMultiplexer _connectionMultiplexer;
+        private readonly Func<PostgreSqlDbContext> _dbContextAccessor;
 
-        public EventsRepository(string connectionString)
+        public EventsRepository(Func<PostgreSqlDbContext> dbContextAccessor)
         {
-            _connectionMultiplexer = ConnectionMultiplexer.Connect(connectionString);
+            _dbContextAccessor = dbContextAccessor ?? throw new ArgumentNullException(nameof(dbContextAccessor));
         }
 
-        public Task AddAsync(int eventId)
+
+        public async Task AddAsync(int eventId)
         {
-            return _connectionMultiplexer.GetDatabase(2)
-                .StringSetAsync(eventId.ToString(), true, TimeSpan.FromHours(1));
+            using (var context = _dbContextAccessor())
+            {
+                await context.Events.AddAsync(new Event {EventId = eventId});
+                await context.SaveChangesAsync();
+            }
         }
 
-        public Task<bool> ExistsAsync(int eventId)
+        public async Task<bool> ExistsAsync(int eventId)
         {
-            return _connectionMultiplexer.GetDatabase(2).KeyExistsAsync(eventId.ToString());
+            using (var context = _dbContextAccessor())
+            {
+                return await context.Events.ContainsAsync(new Event {EventId = eventId});
+            }
         }
     }
 }

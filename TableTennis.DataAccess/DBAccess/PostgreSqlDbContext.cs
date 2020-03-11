@@ -14,6 +14,9 @@ namespace TableTennis.DataAccess.DBAccess
         public DbSet<Game> Games { get; set; }
         public DbSet<PlayerInfo> PlayerInfos { get; set; }
         public DbSet<Score> Scores { get; set; }
+        public DbSet<Chat> Chats { get; set; }
+        public DbSet<AuthCode> AuthCodes { get; set; }
+        public DbSet<Event> Events { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

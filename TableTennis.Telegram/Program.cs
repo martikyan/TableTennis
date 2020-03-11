@@ -20,8 +20,6 @@ namespace TableTennis.Telegram
                 .AddJsonFile("appsettings.json", false);
 
             var configuration = builder.Build();
-
-            var redisConnectionString = configuration.GetConnectionString("Redis");
             var tbc = new TelegramBotConfiguration();
             var rtrc = new RealTimeRetrieverConfiguration();
             configuration.Bind(nameof(TelegramBotConfiguration), tbc);
@@ -33,11 +31,9 @@ namespace TableTennis.Telegram
                 .AddSingleton(rtrc)
                 .AddSingleton<RealTimeRetriever>()
                 .AddSingleton<IBetsApiClient, BetsApiClient>(isp => new BetsApiClient(rtrc.BetsApiUrl))
-                .AddSingleton<IAccessTokenRepository, AccessTokenRepository>(isp =>
-                    new AccessTokenRepository(redisConnectionString))
-                .AddSingleton<IChatsRepository, ChatsRepository>(isp => new ChatsRepository(redisConnectionString))
-                .AddSingleton<IEventsRepository, EventsRepository>(isp =>
-                    new EventsRepository(redisConnectionString))
+                .AddSingleton<IAccessTokenRepository, AccessTokenRepository>()
+                .AddSingleton<IChatsRepository, ChatsRepository>()
+                .AddSingleton<IEventsRepository, EventsRepository>()
                 .AddSingleton<TableTennisBot>()
                 .AddDbContext<PostgreSqlDbContext>(db => db.UseNpgsql(configuration.GetConnectionString("PostgreSql")))
                 .AddDbContextPool<PostgreSqlDbContext>(db =>

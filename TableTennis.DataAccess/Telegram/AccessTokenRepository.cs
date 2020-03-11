@@ -1,42 +1,55 @@
+using System;
+using System.Linq;
 using System.Threading.Tasks;
-using StackExchange.Redis;
+using Microsoft.EntityFrameworkCore;
+using TableTennis.DataAccess.DBAccess;
+using TableTennis.DataAccess.DBAccess.Models;
 
 namespace TableTennis.DataAccess.Telegram
 {
     public class AccessTokenRepository : IAccessTokenRepository
     {
-        private readonly ConnectionMultiplexer _connectionMultiplexer;
+        private readonly Func<PostgreSqlDbContext> _dbContextAccessor;
 
-        public AccessTokenRepository(string connectionString)
+        public AccessTokenRepository(Func<PostgreSqlDbContext> dbContextAccessor)
         {
-            _connectionMultiplexer = ConnectionMultiplexer.Connect(connectionString);
+            _dbContextAccessor = dbContextAccessor ?? throw new ArgumentNullException(nameof(dbContextAccessor));
         }
 
-        public Task<bool> ExistsAsync(string accessToken)
+        public async Task<bool> ExistsAsync(string accessToken)
         {
-            return _connectionMultiplexer.GetDatabase(0).KeyExistsAsync(accessToken.ToUpper());
+            using (var context = _dbContextAccessor())
+            {
+                return await context.AuthCodes.ContainsAsync(new AuthCode {AuthCodeId = accessToken});
+            }
         }
 
-        public Task AddAsync(string accessToken)
+        public async Task AddAsync(string accessToken)
         {
-            return _connectionMultiplexer.GetDatabase(0).StringSetAsync(accessToken.ToUpper(), false);
+            using (var context = _dbContextAccessor())
+            {
+                await context.AuthCodes.AddAsync(new AuthCode {AuthCodeId = accessToken});
+                await context.SaveChangesAsync();
+            }
         }
 
-        public Task MakeUsedAsync(string accessToken)
+        public async Task MakeUsedAsync(string accessToken)
         {
-            return _connectionMultiplexer.GetDatabase(0).StringSetAsync(accessToken.ToUpper(), true);
+            using (var context = _dbContextAccessor())
+            {
+                var token = await context.AuthCodes.FirstAsync(ac => ac.AuthCodeId == accessToken);
+                token.IsUsed = true;
+                await context.SaveChangesAsync();
+            }
         }
 
         public async Task<bool> IsUsedAsync(string accessToken)
         {
-            if (!await ExistsAsync(accessToken)) return false;
-            var result = await _connectionMultiplexer.GetDatabase(0).StringGetAsync(accessToken.ToUpper());
-            return (bool) result;
-        }
-
-        public Task RemoveAsync(string accessToken)
-        {
-            return _connectionMultiplexer.GetDatabase(0).KeyDeleteAsync(accessToken.ToUpper());
+            using (var context = _dbContextAccessor())
+            {
+                var token = await context.AuthCodes.FirstOrDefaultAsync(ac => ac.AuthCodeId == accessToken);
+                return token?.IsUsed ?? true;
+            }
         }
     }
 }

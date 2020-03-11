@@ -1,34 +1,46 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using StackExchange.Redis;
+using Microsoft.EntityFrameworkCore;
+using TableTennis.DataAccess.DBAccess;
+using TableTennis.DataAccess.DBAccess.Models;
 
 namespace TableTennis.DataAccess.Telegram
 {
     public class ChatsRepository : IChatsRepository
     {
-        private const string CHATS_KEY = "ChatIds";
-        private readonly ConnectionMultiplexer _connectionMultiplexer;
+        private readonly Func<PostgreSqlDbContext> _dbContextAccessor;
 
-        public ChatsRepository(string connectionString)
+        public ChatsRepository(Func<PostgreSqlDbContext> dbContextAccessor)
         {
-            _connectionMultiplexer = ConnectionMultiplexer.Connect(connectionString);
+            _dbContextAccessor = dbContextAccessor ?? throw new ArgumentNullException(nameof(dbContextAccessor));
         }
 
-        public Task AddChatAsync(long chatId)
+
+        public async Task AddChatAsync(long chatId)
         {
-            return _connectionMultiplexer.GetDatabase(1).SetAddAsync(CHATS_KEY, chatId);
+            using (var context = _dbContextAccessor())
+            {
+                await context.Chats.AddAsync(new Chat {ChatId = chatId});
+                await context.SaveChangesAsync();
+            }
         }
 
         public async Task<List<long>> GetAllChatsAsync()
         {
-            var result = await _connectionMultiplexer.GetDatabase(1).SetMembersAsync(CHATS_KEY);
-            return result.Select(r => long.Parse(r)).ToList();
+            using (var context = _dbContextAccessor())
+            {
+                return await context.Chats.AsNoTracking().Select(c => c.ChatId).ToListAsync();
+            }
         }
 
-        public Task<bool> ExistsAsync(long chatId)
+        public async Task<bool> ExistsAsync(long chatId)
         {
-            return _connectionMultiplexer.GetDatabase(1).SetContainsAsync(CHATS_KEY, chatId.ToString());
+            using (var context = _dbContextAccessor())
+            {
+                return await context.Chats.AsNoTracking().ContainsAsync(new Chat {ChatId = chatId});
+            }
         }
     }
 }
