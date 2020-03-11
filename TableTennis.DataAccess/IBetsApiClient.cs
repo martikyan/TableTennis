@@ -31,5 +31,9 @@ namespace TableTennis.DataAccess
         // https://api.betsapi.com/v2/events/ended?sport_id=1&token=YOUR-TOKEN
         [Get("v2/events/ended")]
         Task<EndedEventsPage> GetEndedEventsPageAsync([Query("sport_id")] int sportId, string token, int page);
+        
+        // https://api.betsapi.com/v2/events/ended?sport_id=1&token=YOUR-TOKEN
+        [Get("v2/events/ended")]
+        Task<EndedEventsPage> GetEndedEventsDayAsync([Query("sport_id")] int sportId, string token, int day, int page);
     }
 }

@@ -25,20 +25,71 @@ namespace TableTennis.DataExtractor
             _betsApiClient = betsApiClient ?? throw new ArgumentNullException(nameof(betsApiClient));
         }
 
-        public async Task ScanAllPagesAsync()
+        public async Task ScanOlderGamesAsync()
         {
-            for (var i = 100; i >= 0; i--) await ScanSinglePage(i);
+            var earliestDate = DateTimeOffset.UtcNow;
+            Console.WriteLine($"Starting from {earliestDate}");
+            foreach (var date in GetYYYYMMDDs(earliestDate.DateTime, _configuration.DaysToScanBefore))
+            {
+                Console.WriteLine($"Current date {date}");
+                EndedEventsPage firstPage;
+                do
+                {
+                    firstPage = await _betsApiClient.GetEndedEventsDayAsync((int) SportId.TableTennis,
+                        _configuration.BetsApiAccessToken,
+                        date, 0);
+
+                    await Task.Delay(TimeSpan.FromSeconds(10));
+                } while (firstPage?.Results == null);
+                
+                await RegisterPageResults(firstPage);
+
+                var totalPages = 0;
+                if (firstPage.Pager.PerPage == 0)
+                {
+                    totalPages = 2;
+                }
+                else
+                {
+                    totalPages =  1 + firstPage.Pager.Total / firstPage.Pager.PerPage;
+                }
+                
+                Console.WriteLine($"Total pages in this date {totalPages}");
+                for (var i = 0; i < totalPages; i++)
+                {
+                    Console.WriteLine($"Getting page N{i}");
+                    await ScanSinglePage(i, date);
+                }
+            }
         }
 
-        private async Task ScanSinglePage(int page)
+        private IEnumerable<int> GetYYYYMMDDs(DateTime from, int days)
         {
-            var resp = await _betsApiClient.GetEndedEventsPageAsync((int) SportId.TableTennis,
+            var iDate = from;
+            for (var i = 0; i < days; i++)
+            {
+                yield return int.Parse(
+                    iDate.ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture));
+                iDate = iDate.Subtract(TimeSpan.FromDays(1));
+            }
+        }
+
+        private async Task ScanSinglePage(int page, int date)
+        {
+            var resp = await _betsApiClient.GetEndedEventsDayAsync((int) SportId.TableTennis,
                 _configuration.BetsApiAccessToken,
+                date,
                 page);
 
-            if (resp?.Results == null) return;
 
-            foreach (var result in resp.Results)
+            await RegisterPageResults(resp);
+        }
+
+        private async Task RegisterPageResults(EndedEventsPage eep)
+        {
+            if (eep?.Results == null) return;
+
+            foreach (var result in eep.Results)
             {
                 var containsGame = await _dbContext.Games.AnyAsync(g => g.Id == result.Id);
                 if (containsGame) continue;
@@ -46,14 +97,13 @@ namespace TableTennis.DataExtractor
                 var game = await ExtractGameFromResult(result);
                 if (game == null) continue;
 
+                Console.WriteLine($"Adding game with Id: {game.Id}");
                 await _dbContext.AddAsync(game);
                 await _dbContext.SaveChangesAsync();
             }
-
-            Console.WriteLine($"Scanned page {page}");
         }
 
-        private async Task<Game> ExtractGameFromResult(EndedEventsPage.Result result)
+        private async Task<Game> ExtractGameFromResult(dynamic result)
         {
             var game = new Game
             {
@@ -75,12 +125,13 @@ namespace TableTennis.DataExtractor
 
             if (result.Scores?.Values == null) return null;
 
-            foreach (var extractedScore in result.Scores.Values.Select(score => new Score
+            foreach (var score in result.Scores.Values)
             {
-                Score1 = score.Home,
-                Score2 = score.Away
-            }))
-            {
+                var extractedScore = new Score
+                {
+                    Score1 = score.Home,
+                    Score2 = score.Away,
+                };
                 game.Scores.Add(new GamesScoresMap
                 {
                     Score = extractedScore,

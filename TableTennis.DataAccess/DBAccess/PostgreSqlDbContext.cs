@@ -16,10 +16,6 @@ namespace TableTennis.DataAccess.DBAccess
         {
         }
 
-        public PostgreSqlDbContext()
-        {
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<GamesScoresMap>()

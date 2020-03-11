@@ -3,11 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using TableTennis.DataAccess;
+using TableTennis.DataAccess.DBAccess;
 using TableTennis.DataAccess.Models;
 using TableTennis.DataAccess.Telegram;
-using TableTennis.RR.Helpers;
 using TableTennis.RR.Models;
+using Score = TableTennis.RR.Models.Score;
 
 namespace TableTennis.RR
 {
@@ -15,14 +17,17 @@ namespace TableTennis.RR
     {
         private readonly IBetsApiClient _betsApiClient;
         private readonly RealTimeRetrieverConfiguration _configuration;
+        private readonly Func<PostgreSqlDbContext> _dbContextAccessor;
         private readonly IEventsRepository _eventsRepository;
 
         public RealTimeRetriever(IBetsApiClient betsApiClient, IEventsRepository eventsRepository,
-            RealTimeRetrieverConfiguration configuration)
+            RealTimeRetrieverConfiguration configuration,
+            Func<PostgreSqlDbContext> dbContextAccessor)
         {
             _betsApiClient = betsApiClient ?? throw new ArgumentNullException(nameof(betsApiClient));
             _eventsRepository = eventsRepository ?? throw new ArgumentNullException(nameof(eventsRepository));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _dbContextAccessor = dbContextAccessor ?? throw new ArgumentNullException(nameof(dbContextAccessor));
         }
 
         public event UnbalancedOddsHandler OnUnbalancedOddsFound = delegate { };
@@ -88,26 +93,39 @@ namespace TableTennis.RR
 
         private async Task<List<Tuple<Score, Score>>> GetHistoryOfGamesAsync(int eventId)
         {
-            var result = new ConcurrentBag<Tuple<Score, Score>>();
+            var result = new List<Tuple<Score, Score>>();
             var singleEvent = await _betsApiClient.GetSingleEventAsync(_configuration.BetsApiAccessToken, eventId);
             var name1 = singleEvent.Results[0].Home.Name;
             var name2 = singleEvent.Results[0].Away.Name;
-            foreach (var date in DateTimeHelper.GetPast90DaysYYYYMMDD().AsParallel())
+
+            using (var db = _dbContextAccessor())
             {
-                var daySearch1Task = _betsApiClient.SearchEventsForTeamsAsync(_configuration.BetsApiAccessToken,
-                    (int) SportId.TableTennis, name1, name2, date);
+                var games = await db.Games
+                    .Include(g => g.Player1)
+                    .Include(g => g.Player2)
+                    .Include(g => g.Scores)
+                    .ThenInclude(sc => sc.Score)
+                    .AsNoTracking().Where(g =>
+                        ( g.Player1.Name == name1 && g.Player2.Name == name2) ||
+                        ( g.Player1.Name == name2 && g.Player2.Name == name1))
+                    .ToListAsync();
 
-                var daySearch2Task = _betsApiClient.SearchEventsForTeamsAsync(_configuration.BetsApiAccessToken,
-                    (int) SportId.TableTennis, name2, name1, date);
+                foreach (var gameScore in games.SelectMany(g => g.Scores))
+                {
+                    var score1 = new Score
+                    {
+                        ActualScore = gameScore.Score.Score1,
+                        PlayerName = name1,
+                    };
 
+                    var score2 = new Score
+                    {
+                        ActualScore = gameScore.Score.Score2,
+                        PlayerName = name2,
+                    };
 
-                var scores = ExtractFinalScores(await daySearch1Task);
-                scores.AddRange(ExtractFinalScores(await daySearch2Task));
-                foreach (var tuple in from score in scores
-                    let score1 = new Score {ActualScore = score.Item1, PlayerName = name1}
-                    let score2 = new Score {ActualScore = score.Item2, PlayerName = name2}
-                    select Tuple.Create(score1, score2))
-                    result.Add(tuple);
+                    result.Add(new Tuple<Score, Score>(score1, score2));
+                }
             }
 
             return result.ToList();
@@ -118,6 +136,11 @@ namespace TableTennis.RR
             var result = new List<int>();
             var response =
                 await _betsApiClient.GetInplayEventsAsync((int) SportId.TableTennis, _configuration.BetsApiAccessToken);
+            if (response?.Results == null)
+            {
+                return result;
+            }
+            
             foreach (var e in response.Results)
             {
                 var wasRetrieved = await _eventsRepository.ExistsAsync(e.Id);
@@ -125,25 +148,6 @@ namespace TableTennis.RR
 
                 result.Add(e.Id);
                 await _eventsRepository.AddAsync(e.Id);
-            }
-
-            return result;
-        }
-
-        private static List<Tuple<int, int>> ExtractFinalScores(EventSearchResponse response)
-        {
-            var result = new List<Tuple<int, int>>();
-            try
-            {
-                foreach (var singleRes in response.Results)
-                {
-                    var scores = singleRes.Scores.Values;
-                    foreach (var score in scores) result.Add(Tuple.Create(score.Home, score.Away));
-                }
-            }
-            catch
-            {
-                // ignored
             }
 
             return result;

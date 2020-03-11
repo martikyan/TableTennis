@@ -4,15 +4,15 @@ namespace TableTennis.DataAccess.Models
 {
     public class SingleEventView
     {
-        public long Success { get; set; }
+        public int Success { get; set; }
         public List<Result> Results { get; set; }
     }
 
     public class Result
     {
-        public long Id { get; set; }
-        public long Time { get; set; }
-        public long TimeStatus { get; set; }
+        public int Id { get; set; }
+        public int Time { get; set; }
+        public int TimeStatus { get; set; }
         public Side League { get; set; }
         public Side Home { get; set; }
         public Side Away { get; set; }
@@ -23,15 +23,15 @@ namespace TableTennis.DataAccess.Models
 
         public class Side
         {
-            public long Id { get; set; }
+            public int Id { get; set; }
             public string Name { get; set; }
-            public long? ImageId { get; set; }
+            public int? ImageId { get; set; }
             public string Cc { get; set; }
         }
 
         public class Event
         {
-            public long Id { get; set; }
+            public int Id { get; set; }
             public string Text { get; set; }
         }
 
@@ -39,10 +39,10 @@ namespace TableTennis.DataAccess.Models
         {
             public AwayManagerModel AwayManager { get; set; }
             public AwayManagerModel HomeManager { get; set; }
-            public long HomePos { get; set; }
-            public long AwayPos { get; set; }
+            public int HomePos { get; set; }
+            public int AwayPos { get; set; }
             public AwayManagerModel Referee { get; set; }
-            public long Round { get; set; }
+            public int Round { get; set; }
             public string Pitch { get; set; }
             public string Stadium { get; set; }
             public string Weather { get; set; }
@@ -56,15 +56,15 @@ namespace TableTennis.DataAccess.Models
 
         public class Score
         {
-            public long? Home { get; set; }
-            public long? Away { get; set; }
+            public int? Home { get; set; }
+            public int? Away { get; set; }
         }
 
         public class TimerModel
         {
-            public long Tm { get; set; }
-            public long Ts { get; set; }
-            public long Tt { get; set; }
+            public int Tm { get; set; }
+            public int Ts { get; set; }
+            public int Tt { get; set; }
         }
     }
 }
