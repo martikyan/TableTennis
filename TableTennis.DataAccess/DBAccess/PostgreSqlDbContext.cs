@@ -1,4 +1,3 @@
-using System;
 using Microsoft.EntityFrameworkCore;
 using TableTennis.DataAccess.DBAccess.Models;
 
@@ -6,15 +5,15 @@ namespace TableTennis.DataAccess.DBAccess
 {
     public class PostgreSqlDbContext : DbContext
     {
-        public DbSet<GamesScoresMap> GamesScoresMap { get; set; }
-        public DbSet<Game> Games { get; set; }
-        public DbSet<PlayerInfo> PlayerInfos { get; set; }
-        public DbSet<Score> Scores { get; set; }
-
         public PostgreSqlDbContext(DbContextOptions<PostgreSqlDbContext> options)
             : base(options)
         {
         }
+
+        public DbSet<GamesScoresMap> GamesScoresMap { get; set; }
+        public DbSet<Game> Games { get; set; }
+        public DbSet<PlayerInfo> PlayerInfos { get; set; }
+        public DbSet<Score> Scores { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

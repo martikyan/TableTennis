@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TableTennis.DataAccess;
@@ -41,19 +41,15 @@ namespace TableTennis.DataExtractor
 
                     await Task.Delay(TimeSpan.FromSeconds(10));
                 } while (firstPage?.Results == null);
-                
+
                 await RegisterPageResults(firstPage);
 
                 var totalPages = 0;
                 if (firstPage.Pager.PerPage == 0)
-                {
                     totalPages = 2;
-                }
                 else
-                {
-                    totalPages =  1 + firstPage.Pager.Total / firstPage.Pager.PerPage;
-                }
-                
+                    totalPages = 1 + firstPage.Pager.Total / firstPage.Pager.PerPage;
+
                 Console.WriteLine($"Total pages in this date {totalPages}");
                 for (var i = 0; i < totalPages; i++)
                 {
@@ -69,7 +65,7 @@ namespace TableTennis.DataExtractor
             for (var i = 0; i < days; i++)
             {
                 yield return int.Parse(
-                    iDate.ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture));
+                    iDate.ToString("yyyyMMdd", CultureInfo.InvariantCulture));
                 iDate = iDate.Subtract(TimeSpan.FromDays(1));
             }
         }
@@ -130,7 +126,7 @@ namespace TableTennis.DataExtractor
                 var extractedScore = new Score
                 {
                     Score1 = score.Home,
-                    Score2 = score.Away,
+                    Score2 = score.Away
                 };
                 game.Scores.Add(new GamesScoresMap
                 {

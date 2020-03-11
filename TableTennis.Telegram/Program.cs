@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -41,7 +40,8 @@ namespace TableTennis.Telegram
                     new EventsRepository(redisConnectionString))
                 .AddSingleton<TableTennisBot>()
                 .AddDbContext<PostgreSqlDbContext>(db => db.UseNpgsql(configuration.GetConnectionString("PostgreSql")))
-                .AddDbContextPool<PostgreSqlDbContext>(db => db.UseNpgsql(configuration.GetConnectionString("PostgreSql")))
+                .AddDbContextPool<PostgreSqlDbContext>(db =>
+                    db.UseNpgsql(configuration.GetConnectionString("PostgreSql")))
                 .AddSingleton<Func<PostgreSqlDbContext>>(isp => isp.GetService<PostgreSqlDbContext>)
                 .BuildServiceProvider();
 

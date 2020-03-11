@@ -29,13 +29,13 @@ namespace TableTennis.DataAccess.Models
             public Side OAway { get; set; }
             public Side OHome { get; set; }
 
-            public partial class ScoreModel
+            public class ScoreModel
             {
                 public int Home { get; set; }
                 public int Away { get; set; }
             }
 
-            public partial class Side
+            public class Side
             {
                 public int Id { get; set; }
                 public string Name { get; set; }

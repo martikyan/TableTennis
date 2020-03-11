@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,7 +8,6 @@ using TableTennis.DataAccess.DBAccess;
 using TableTennis.DataAccess.Models;
 using TableTennis.DataAccess.Telegram;
 using TableTennis.RR.Models;
-using Score = TableTennis.RR.Models.Score;
 
 namespace TableTennis.RR
 {
@@ -106,8 +104,8 @@ namespace TableTennis.RR
                     .Include(g => g.Scores)
                     .ThenInclude(sc => sc.Score)
                     .AsNoTracking().Where(g =>
-                        ( g.Player1.Name == name1 && g.Player2.Name == name2) ||
-                        ( g.Player1.Name == name2 && g.Player2.Name == name1))
+                        g.Player1.Name == name1 && g.Player2.Name == name2 ||
+                        g.Player1.Name == name2 && g.Player2.Name == name1)
                     .ToListAsync();
 
                 foreach (var gameScore in games.SelectMany(g => g.Scores))
@@ -115,13 +113,13 @@ namespace TableTennis.RR
                     var score1 = new Score
                     {
                         ActualScore = gameScore.Score.Score1,
-                        PlayerName = name1,
+                        PlayerName = name1
                     };
 
                     var score2 = new Score
                     {
                         ActualScore = gameScore.Score.Score2,
-                        PlayerName = name2,
+                        PlayerName = name2
                     };
 
                     result.Add(new Tuple<Score, Score>(score1, score2));
@@ -136,11 +134,8 @@ namespace TableTennis.RR
             var result = new List<int>();
             var response =
                 await _betsApiClient.GetInplayEventsAsync((int) SportId.TableTennis, _configuration.BetsApiAccessToken);
-            if (response?.Results == null)
-            {
-                return result;
-            }
-            
+            if (response?.Results == null) return result;
+
             foreach (var e in response.Results)
             {
                 var wasRetrieved = await _eventsRepository.ExistsAsync(e.Id);

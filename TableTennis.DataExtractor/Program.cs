@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -29,7 +28,7 @@ namespace TableTennis.DataExtractor
                 .AddSingleton<IBetsApiClient, BetsApiClient>(isp => new BetsApiClient(dec.BetsApiUrl))
                 .AddDbContext<PostgreSqlDbContext>(db => db.UseNpgsql(dec.PostgreSqlConnectionString))
                 .BuildServiceProvider();
-            
+
             await serviceProvider.GetService<PostgreSqlDbContext>().Database.EnsureCreatedAsync();
             await serviceProvider.GetService<DataExtractor>().ScanOlderGamesAsync();
             Console.WriteLine("Done");
