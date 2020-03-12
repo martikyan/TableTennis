@@ -30,7 +30,7 @@ namespace TableTennis.DataExtractor
                 .BuildServiceProvider();
 
             await serviceProvider.GetService<PostgreSqlDbContext>().Database.EnsureCreatedAsync();
-            await serviceProvider.GetService<DataExtractor>().ScanOlderGamesAsync();
+            await serviceProvider.GetService<DataExtractor>().ScanPassedGamesAsync();
             Console.WriteLine("Done");
         }
     }

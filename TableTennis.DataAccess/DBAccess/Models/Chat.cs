@@ -4,7 +4,6 @@ namespace TableTennis.DataAccess.DBAccess.Models
 {
     public class Chat
     {
-        [Key]
-        public long ChatId { get; set; }
+        [Key] public long ChatId { get; set; }
     }
 }

@@ -41,11 +41,11 @@ namespace TableTennis.Telegram
                 .AddSingleton<Func<PostgreSqlDbContext>>(isp => isp.GetService<PostgreSqlDbContext>)
                 .BuildServiceProvider();
 
-
-            serviceProvider.GetService<TableTennisBot>();
+            var tBot = serviceProvider.GetService<TableTennisBot>();
             serviceProvider.GetService<RealTimeRetriever>().StartAsync().Wait();
 
             new ManualResetEvent(false).WaitOne();
+            GC.KeepAlive(tBot);
         }
     }
 }

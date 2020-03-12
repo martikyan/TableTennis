@@ -40,7 +40,7 @@ namespace TableTennis.RR
                 {
                     var historyResult = await GetHistoryOfGamesAsync(id);
                     AnalyzeScores(historyResult);
-                    
+
                     var oddsResult =
                         await _betsApiClient.GetSingleEventOddsSummaryAsync(_configuration.BetsApiAccessToken, id);
 
@@ -76,7 +76,7 @@ namespace TableTennis.RR
             }
         }
 
-        private void AnalyzeScores(List<Tuple<Score, Score>> scores)
+        private void AnalyzeScores(IReadOnlyList<Tuple<Score, Score>> scores)
         {
             if (scores.Count < _configuration.MinimalHistoryCount) return;
 

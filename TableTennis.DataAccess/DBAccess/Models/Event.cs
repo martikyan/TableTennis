@@ -4,7 +4,6 @@ namespace TableTennis.DataAccess.DBAccess.Models
 {
     public class Event
     {
-        [Key]
-        public int EventId { get; set; }
+        [Key] public int EventId { get; set; }
     }
 }

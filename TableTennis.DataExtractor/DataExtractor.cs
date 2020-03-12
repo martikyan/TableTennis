@@ -26,7 +26,7 @@ namespace TableTennis.DataExtractor
             _betsApiClient = betsApiClient ?? throw new ArgumentNullException(nameof(betsApiClient));
         }
 
-        public async Task ScanOlderGamesAsync()
+        public async Task ScanPassedGamesAsync()
         {
             var earliestDate = DateTimeOffset.UtcNow;
             Console.WriteLine($"Starting from {earliestDate}");
@@ -48,11 +48,8 @@ namespace TableTennis.DataExtractor
                     }
                 } while (firstPage?.Results == null && attempt < 10);
 
-                if (attempt >= 10)
-                {
-                    break;
-                }
-                
+                if (attempt >= 10) break;
+
                 await RegisterPageResults(firstPage);
 
                 var totalPages = 6;
@@ -136,13 +133,11 @@ namespace TableTennis.DataExtractor
                 Score1 = score.Home,
                 Score2 = score.Away
             }))
-            {
                 game.Scores.Add(new GamesScoresMap
                 {
                     Score = extractedScore,
                     Game = game
                 });
-            }
 
             return game;
         }
