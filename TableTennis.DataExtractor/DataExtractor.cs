@@ -48,7 +48,7 @@ namespace TableTennis.DataExtractor
                     }
                 } while (firstPage?.Results == null && attempt < 10);
 
-                if (attempt >= 10) break;
+                if (firstPage?.Results == null) break;
 
                 await RegisterPageResults(firstPage);
 
