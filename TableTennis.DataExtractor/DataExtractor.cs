@@ -48,16 +48,16 @@ namespace TableTennis.DataExtractor
                     }
                 } while (firstPage?.Results == null && attempt < 10);
 
-                if (firstPage?.Results == null) break;
+                if (firstPage?.Results == null) continue;
 
-                await RegisterPageResults(firstPage);
-
-                var totalPages = 6;
+                var totalPages = 4;
                 if (firstPage.Pager.PerPage != 0)
                     totalPages = 1 + firstPage.Pager.Total / firstPage.Pager.PerPage;
 
                 Console.WriteLine($"Total pages in this date {totalPages}");
-                for (var i = 2; i <= totalPages + 4; i++)
+                await RegisterPageResults(firstPage);
+
+                for (var i = 2; i <= totalPages + 2; i++)
                 {
                     Console.WriteLine($"Scanning page N{i}");
                     await ScanSinglePage(i, date);
@@ -101,9 +101,10 @@ namespace TableTennis.DataExtractor
                 if (game == null) continue;
 
                 Console.WriteLine($"Adding game with Id: {game.Id}");
-                await _dbContext.AddAsync(game);
-                await _dbContext.SaveChangesAsync();
+                _dbContext.Add(game);
             }
+            
+            await _dbContext.SaveChangesAsync();
         }
 
         private async Task<Game> ExtractGameFromResult(EndedEventsPage.Result result)
