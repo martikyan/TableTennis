@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Polly;
 using Polly.Retry;
@@ -17,7 +18,7 @@ namespace TableTennis.DataAccess
         {
             _betsApiClient = RestClient.For<IBetsApiClient>(betsApiUrl);
             _retryPolicy = Policy
-                .Handle<ApiException>()
+                .Handle<Exception>(e => e is ApiException || e is HttpRequestException)
                 .WaitAndRetryForeverAsync(retryAttempt =>
                 {
                     var secondsToWait = Math.Pow(retryAttempt, 2);
