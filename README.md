@@ -1,2 +1,2 @@
 # TableTennis
-TableTennis Telegram bot that helps detecting table tennis (round score for both players)%2
+TableTennis Telegram bot that helps predicting table tennis (round score for both players)%2
